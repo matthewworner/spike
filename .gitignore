@@ -1,0 +1,29 @@
+# Build artifacts
+*.o
+*.a
+*.dylib
+*.dSYM
+
+# Compiled binaries
+synthetic
+analyze
+benchmark
+pager_test
+spike_index_test
+
+# Trace files (generated during runs)
+*.wptr
+
+# Temp files (created by pager_test)
+/tmp/kernel_ai_test*.bin
+/tmp/kernel_ai_test*.wptr
+
+# Python cache
+__pycache__/
+*.pyc
+
+# OS files
+.DS_Store
+
+# Temporary weight files (test artifacts)
+/tmp/spike_test*.bin
