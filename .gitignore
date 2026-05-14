@@ -27,3 +27,6 @@ __pycache__/
 
 # Temporary weight files (test artifacts)
 /tmp/spike_test*.bin
+
+# Project docs (not for version control)
+docs/
