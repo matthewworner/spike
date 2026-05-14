@@ -4,7 +4,7 @@ CFLAGS = -O2 -Wall -Wextra -std=c11 -g
 SPIKE_SRCS = pager.c predictor.c tracer.c spike_index.c spike_api.c
 SPIKE_HDRS = pager.h predictor.h tracer.h spike_index.h spike_api.h
 
-all: synthetic analyze benchmark pager_test spike_index_test
+all: synthetic analyze benchmark pager_test spike_index_test libspike.dylib
 
 synthetic: synthetic.c tracer.c tracer.h
 	$(CC) $(CFLAGS) -o synthetic synthetic.c tracer.c -lm
