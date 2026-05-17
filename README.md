@@ -6,6 +6,11 @@ Weight paging for large language models on memory-constrained hardware.
 
 Run a 200B+ parameter model on a 16GB machine — by treating model weights the way an OS treats virtual memory.
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE)
+[![macOS](https://img.shields.io/badge/macOS-Apple%20Silicon-blue.svg)](https://apple.com)
+[![MLX](https://img.shields.io/badge/MLX-Ready-green.svg)](https://github.com/ml-explore/mlx)
+[![Stars](https://img.shields.io/github/stars/matthewworner/spike?style=flat&color=yellow)](https://github.com/matthewworner/spike/stargazers)
+
 ---
 
 ## The problem
@@ -206,7 +211,7 @@ The `n_slots=6` budget (6 × 262 MB = 1.57 GB) is the number that goes in the RE
 Requires: C11 compiler, pthreads, POSIX mmap. Python stack requires mlx and mlx-lm. Works on macOS (Apple Silicon).
 
 ```bash
-git clone https://github.com/your-handle/Spike
+git clone https://github.com/matthewworner/spike
 cd Spike
 make
 
@@ -353,6 +358,46 @@ Good first contributions:
 - Build the Metal prefetch pipeline for Apple ANE
 
 The goal is not another inference framework. The goal is a layer that sits below any inference framework and makes memory-constrained inference faster by being smarter about what lives in RAM.
+
+---
+
+## Build On Spike
+
+Spike is a production-ready foundation for the memory hierarchy problem that most local LLM projects ignore. The pager, tracer, Markov predictor, and safetensor index are battle-tested — compiled into `libspike.dylib` with a flat C ABI (`spike_open` / `spike_get` / `spike_release`). This is not a prototype. It's a drop-in replacement for direct weight loading.
+
+### Why build on it
+
+- **Proven value:** 1.16x throughput vs naive LRU, 91.9% top-2 prediction accuracy, Qwen3-32B (17.5GB weights) running on 16GB RAM at 2.64GB peak RSS — all documented in REPORT.md
+- **Hardware-aware and extensible:** Optimized for Apple Silicon today, generalizes to llama.cpp (C API ready), other quant formats, multi-model sharing, ANE offload, and adaptive online learning
+- **Open problems, explicitly listed:** Fork gives you a head start — not a blank slate. Every missing feature is a well-scoped problem with clear entry points
+- **Blue ocean:** Most local LLM work competes on quantization or inference speed. Memory hierarchy is a different axis — and it's the axis that determines whether a 200B model runs at all on constrained hardware
+
+### Who should build on it
+
+- **Consumer hardware developers** targeting MacBooks, mini PCs, laptops with 8–32GB RAM
+- **llama.cpp contributors** — the pager API is plug-and-play once you map GGUF blocks (see spike_index.c for the safetensor solution)
+- **Researchers** on speculative/predicted execution — the `.wptr` trace format captures ground truth access patterns for prediction research
+- **Edge/on-device AI builders** who need to stream weights efficiently from local storage
+- **Systems hackers** who want to make impossible things (200B+ on 16GB) merely slow
+
+### Practical next steps
+
+1. **Start with the MLX integration** — extend `PagedLayer` shim, measure n_slots tradeoff on 24GB/36GB machines
+2. **Add llama.cpp support** — highest immediate impact. spike_api.c shows the API; spike_index.c shows how to solve the GGUF block map
+3. **Experiment with better predictors** — order-2 Markov, graph-based, expert clustering, or a tiny on-device NN trained on `.wptr` traces
+4. **Crowdsource better transition matrices** — opt-in telemetry uploading anonymized `.wptr` traces across diverse hardware and model combinations
+
+### The integration point
+
+```c
+void* weights = pager_get(&pager, block_id);
+// ... GPU uses weights ...
+pager_release(&pager, block_id);
+```
+
+Zero changes to inference logic. The predictor fires in the background — prefetching the likely-next block while the GPU computes. By the time the GPU finishes, the next block is already in RAM.
+
+**Full pitch:** [docs/why_build_on_spike.md](docs/why_build_on_spike.md)
 
 ---
 
